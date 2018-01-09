@@ -5,7 +5,7 @@
 #endif
 #include <string>
 #include <vector>
-#include <mysql.h>
+#include <mysql/mysql.h>
 
 class CDbRow
 {

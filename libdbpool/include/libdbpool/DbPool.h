@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DbConnection.h"
+#include "libdbpool/DbConnection.h"
 #include <vector>
 #include <boost/thread/mutex.hpp>
 

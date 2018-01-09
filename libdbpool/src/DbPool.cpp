@@ -1,4 +1,4 @@
-#include "DbPool.h"
+#include "libdbpool/DbPool.h"
 #include <algorithm>
 #include <boost/thread/thread_time.hpp>
 #ifdef WIN32
