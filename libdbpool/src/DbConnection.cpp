@@ -2,20 +2,20 @@
 #include <assert.h>
 
 
-CDbConnection::CDbConnection(std::string host, std::string user, std::string passwd, std::string database, unsigned int port)
+CDbConnection::CDbConnection(std::string host, std::string user, std::string passwd, std::string database, unsigned int port, std::string charset_name)
 	:m_host(host), m_user(user), m_passwd(passwd), m_database(database), m_port(port), m_affected_rows(0)
 {
 	MYSQL* mysql = mysql_init(&m_mysql);
 	assert(mysql!=NULL);
 
+	mysql_options(mysql, MYSQL_SET_CHARSET_NAME, charset_name.c_str());
 	//mysql_options(&m_mysql, MYSQL_OPT_COMPRESS, 0);
 	my_bool value = 1;
 	mysql_options(&m_mysql, MYSQL_OPT_RECONNECT, &value);
-	
 	bool ret = Connect();
+	const char *error = mysql_error(mysql);
 	assert(ret);
 }
-
 
 CDbConnection::~CDbConnection()
 {
@@ -24,14 +24,7 @@ CDbConnection::~CDbConnection()
 
 bool CDbConnection::Connect()
 {
-	if (!mysql_real_connect(&m_mysql, m_host.c_str(), m_user.c_str(), m_passwd.c_str(), m_database.c_str(), m_port, NULL, 0/*CLIENT_MULTI_RESULTS*/))
-	{
-		fprintf(stderr, "Failed to connect to database: Error: %s\n",
-			mysql_error(&m_mysql));
-		return false;
-	}
-
-	return true;
+	return NULL != mysql_real_connect(&m_mysql, m_host.c_str(), m_user.c_str(), m_passwd.c_str(), m_database.c_str(), m_port, NULL, 0/*CLIENT_MULTI_RESULTS*/);
 }
 
 bool CDbConnection::Query(const char* sql)

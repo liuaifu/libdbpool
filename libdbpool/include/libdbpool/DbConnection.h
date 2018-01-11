@@ -5,7 +5,11 @@
 #endif
 #include <string>
 #include <vector>
+#ifdef WIN32
+#include <mysql.h>
+#else
 #include <mysql/mysql.h>
+#endif
 
 class CDbRow
 {
@@ -51,7 +55,7 @@ public:
 		m_data.clear();
 	}
 
-	const CDbRow operator[](size_t i)
+	CDbRow operator[](size_t i)
 	{
 		if (i >= m_data.size())
 			return CDbRow();
@@ -71,28 +75,35 @@ private:
 class CDbConnection
 {
 public:
-	CDbConnection(std::string host, std::string user, std::string passwd, std::string database, unsigned int port);
+	CDbConnection(std::string host, std::string user, std::string passwd, std::string database, unsigned int port, std::string charset_name);
 	~CDbConnection();
 
-	bool Connect();
 	bool Query(const char* sql);
-	const CDbResult& GetResult()
+	inline const CDbResult& GetResult()
 	{
 		return m_result;
 	}
 
-	my_ulonglong GetAffectedRows()
+	inline my_ulonglong GetAffectedRows()
 	{
 		return m_affected_rows;
 	}
 
+	inline std::string GetLastError()
+	{
+		return mysql_error(&m_mysql);
+	}
+
 private:
+	inline bool Connect();
+
 	MYSQL m_mysql;
 	std::string m_host;
 	std::string m_user;
 	std::string m_passwd;
 	unsigned int m_port;
 	std::string m_database;
+	std::string m_charset_name;
 	CDbResult m_result;
 	my_ulonglong m_affected_rows;
 };
