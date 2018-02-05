@@ -53,7 +53,14 @@ bool CDbConnection::Query(const char* sql)
 		}
 		m_result.AddRow(db_row);
 	}
-
 	mysql_free_result(pRes);
+
+	//清除其余结果集
+	while (!mysql_next_result(&m_mysql)) {
+		pRes = mysql_store_result(&m_mysql);
+		if (pRes != NULL)
+			mysql_free_result(pRes);
+	}
+
 	return true;
 }
