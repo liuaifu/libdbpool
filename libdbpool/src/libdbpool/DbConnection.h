@@ -4,7 +4,6 @@
 #include <vector>
 #ifdef WIN32
 #include <mysql.h>
-#include <windows.h>
 #else
 #include <mysql/mysql.h>
 #endif
@@ -96,9 +95,6 @@ public:
 	{
 		m_affected_rows = 0;
 		m_result.clear();
-
-		if (mysql_ping(&m_mysql))
-			return false;
 
 		if (mysql_query(&m_mysql, sql))
 			return false;

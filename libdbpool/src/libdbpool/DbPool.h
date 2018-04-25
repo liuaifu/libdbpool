@@ -5,21 +5,19 @@
 #include <mutex>
 #include <atomic>
 #include <memory>
+#include <thread>
+#include <chrono>
 #include <algorithm>
-#ifdef WIN32
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
-#include <assert.h>
+
+using namespace std::chrono_literals;
 
 typedef std::shared_ptr<CDbConnection> DbConnectionPtr;
 
 class CDbPool
 {
 public:
-	CDbPool(std::string host, std::string user, std::string passwd, std::string database, unsigned int port = 3306, std::string charset_name = "utf8")
-		:m_maxConnection(10), m_host(host), m_user(user), m_passwd(passwd), m_database(database), m_port(port), m_charset_name(charset_name)
+	CDbPool(std::string host, std::string user, std::string passwd, std::string database, int max_connection = 10, unsigned int port = 3306, std::string charset_name = "utf8")
+		:m_host(host), m_user(user), m_passwd(passwd), m_database(database), m_port(port), m_charset_name(charset_name)
 	{
 		static bool initialized = false;
 		if (!initialized)
@@ -28,8 +26,9 @@ public:
 			initialized = true;
 		}
 
-		m_fnLock = [this]() {m_mutex.lock(); };
-		m_fnUnLock = [this]() {m_mutex.unlock(); };
+		m_maxConnection = max_connection;
+		m_fnLock = [this]() { m_mutex.lock(); };
+		m_fnUnLock = [this]() { m_mutex.unlock(); };
 		m_usingCount = 0;
 	}
 
@@ -43,6 +42,22 @@ public:
 	{
 		m_fnLock = fnLock;
 		m_fnUnLock = fnUnLock;
+	}
+
+	/**
+	* 获取正在使用的连接数
+	*/
+	size_t GetUsingCount()
+	{
+		return (size_t)m_usingCount;
+	}
+
+	/**
+	* 获取空闲的连接数
+	*/
+	size_t GetIdleCount()
+	{
+		return m_idleConnections.size();
 	}
 
 	/**
@@ -81,13 +96,10 @@ public:
 		}
 
 		DbConnectionPtr ptr;
+		auto start = std::chrono::high_resolution_clock::now();
 		while (true)
 		{
-#ifdef WIN32
-			Sleep(16);
-#else
-			usleep(16000);
-#endif
+			std::this_thread::sleep_for(16ms);
 			m_fnLock();
 			if (!m_idleConnections.empty())
 			{
@@ -98,8 +110,13 @@ public:
 					m_usingCount++;
 					break;
 				}
+				ptr.reset();
 			}
 			m_fnUnLock();
+			auto end = std::chrono::high_resolution_clock::now();
+    		std::chrono::duration<double, std::milli> elapsed = end - start;
+			if(elapsed.count() >= 5000)
+				break;
 		}
 
 		return ptr;
@@ -110,6 +127,8 @@ public:
 	*/
 	void FreeDbConnection(DbConnectionPtr ptr)
 	{
+		if(!ptr)return;
+
 		m_fnLock();
 		m_usingCount--;
 		m_idleConnections.push_back(ptr);

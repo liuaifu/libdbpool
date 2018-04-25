@@ -6,7 +6,25 @@
 
 int main()
 {
-	CDbPool pool("localhost", "root", "123456", "test");
+	CDbPool pool("localhost", "root", "123456", "test", 1);
+
+	//测试最大连接数
+	assert(pool.GetIdleCount()==0);		//连接是动态创建的，初始时没有创建任何连接
+	assert(pool.GetUsingCount()==0);
+	auto cn1 = pool.GetDbConnection();
+	assert(pool.GetIdleCount()==0);
+	assert(pool.GetUsingCount()==1);
+	auto cn2 = pool.GetDbConnection();
+	assert(pool.GetIdleCount()==0);
+	assert(pool.GetUsingCount()==1);
+	assert(cn1!=nullptr);
+	assert(cn2==nullptr);
+	pool.FreeDbConnection(cn1);
+	assert(pool.GetIdleCount()==1);
+	assert(pool.GetUsingCount()==0);
+	pool.FreeDbConnection(cn2);
+	assert(pool.GetIdleCount()==1);
+	assert(pool.GetUsingCount()==0);
 
 	//创建库表
 	int n = pool.ExecuteNonQuery("create database If Not Exists test Character Set UTF8");
