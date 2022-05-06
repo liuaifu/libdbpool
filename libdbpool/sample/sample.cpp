@@ -6,7 +6,7 @@
 
 int main()
 {
-	CDbPool pool("localhost", "root", "123456", "test", 1);
+	CDbPool pool("localhost", "root", "12345678", "test", 1);
 
 	//测试最大连接数
 	assert(pool.GetIdleCount()==0);		//连接是动态创建的，初始时没有创建任何连接
@@ -43,7 +43,9 @@ int main()
 	//测试查询
 	auto cn = pool.GetDbConnection();
 	assert((bool)cn);
-	bool ret = cn->Query("select id,data from test_table order by id asc");
+	bool ret = cn->Query("insert into test_table(id,data) values(?,?)", 3, "test");
+	assert(ret);
+	ret = cn->Query("select id,data from test_table order by id asc");
 	assert(ret);
 	auto rows = cn->GetResult();
 	assert(rows.size() == 2);
